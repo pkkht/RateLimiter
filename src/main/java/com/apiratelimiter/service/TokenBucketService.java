@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.IntStream;
 
 @Component
 public class TokenBucketService {
@@ -13,17 +15,22 @@ public class TokenBucketService {
     static List<TokenBucket> tokenBucketList = new ArrayList<>();
 
     @Scheduled(fixedRate = 1000)
-    public void execute(){
-        System.out.println("Code is ");
+    public void addToken(){
+        tokenBucketList.stream().mapToInt(e -> e.maxTokens < 10? e.maxTokens ++ :10);
     }
 
-    public void trackService(String ipAddress){
-        tokenBucketList.forEach(tb -> tb.maxTokens >0?tb.maxTokens--:0);
+    public int trackService(String ipAddress){
+        IntStream tokenStream = tokenBucketList.stream().filter(e -> e.ipAddress.equals(ipAddress)).mapToInt(e -> e.maxTokens>0? e.maxTokens -- :0);
+        return tokenStream.findFirst().getAsInt();
+
     }
 
     public void createTokenBucket(String ipAddress){
-        TokenBucket tokenBucket = new TokenBucket(ipAddress);
-        tokenBucketList.add(tokenBucket);
+        Optional<TokenBucket> optionalTokenBucket = tokenBucketList.stream().filter(e -> e.ipAddress.equals(ipAddress)).findFirst();
+        if (optionalTokenBucket.isEmpty()) {
+            TokenBucket tokenBucket = new TokenBucket(ipAddress);
+            tokenBucketList.add(tokenBucket);
+        }
     }
 
     class TokenBucket{
@@ -33,6 +40,11 @@ public class TokenBucketService {
         TokenBucket(String ipAddress){
             this.ipAddress = ipAddress;
             this.maxTokens = 10;
+        }
+
+        @Override
+        public String toString(){
+            return this.ipAddress + " " + this.maxTokens;
         }
     }
 }
