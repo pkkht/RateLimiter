@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Component
@@ -16,7 +17,7 @@ public class TokenBucketService {
 
     @Scheduled(fixedRate = 1000)
     public void addToken(){
-        tokenBucketList.stream().mapToInt(e -> e.maxTokens < 10? e.maxTokens ++ :10);
+        tokenBucketList.stream().mapToInt(e -> e.maxTokens < 10 && e.maxTokens >0? ++ e.maxTokens  :10).boxed().collect(Collectors.toList());
     }
 
     public int trackService(String ipAddress){
