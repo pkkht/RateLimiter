@@ -11,14 +11,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class ApiRateLimitTestController {
 
-    @Autowired
-    TokenBucketService tokenBucketService;
+    private final TokenBucketService tokenBucketService;
 
-    @Autowired
-    private HttpServletRequest request;
+    private final HttpServletRequest request;
+
+    private ApiRateLimitTestController(TokenBucketService tokenBucketService, HttpServletRequest httpServletRequest){
+        this.tokenBucketService = tokenBucketService;
+        this.request = httpServletRequest;
+    }
 
 
-    @GetMapping("/limited")
+    @GetMapping("/limited-tokenbucket")
     public ResponseEntity<Object> getLimited()  {
         String ipAddress = request.getHeader("X-Forwarded-For");
         if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
@@ -27,7 +30,23 @@ public class ApiRateLimitTestController {
 
         tokenBucketService.createTokenBucket(ipAddress);
         int token  = tokenBucketService.trackService(ipAddress);
-        if (token ==0){
+        if (token == 0) {
+            return new ResponseEntity<>(HttpStatus.TOO_MANY_REQUESTS);
+        }
+
+        return new ResponseEntity<>(ipAddress +" This is limited usage only. Be Careful!",HttpStatus.OK);
+    }
+
+    @GetMapping("/limited-fixedWindow")
+    public ResponseEntity<Object> getLimitedFixedWindow()  {
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getRemoteAddr();
+        }
+
+        tokenBucketService.createTokenBucket(ipAddress);
+        int token  = tokenBucketService.trackService(ipAddress);
+        if (token == 0) {
             return new ResponseEntity<>(HttpStatus.TOO_MANY_REQUESTS);
         }
 
